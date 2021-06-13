@@ -21,7 +21,7 @@ def save_figures_to_html(file_path, figs):
 
             
             
-def plot_evaluation_boxplots(results, names, title, y_axis):
+def plot_evaluation_boxplots(results, names, title, y_axis, y_lim=None):
     
     scores_dict = {name : scores for name, scores in zip(names, results)}
     df = pd.DataFrame(scores_dict)
@@ -58,5 +58,8 @@ def plot_evaluation_boxplots(results, names, title, y_axis):
         yaxis_title=y_axis)
 
     fig = go.Figure(data=traces, layout=layout)
+    
+    if y_lim is not None:
+        fig.update_yaxes(range=y_lim)
     
     return fig
