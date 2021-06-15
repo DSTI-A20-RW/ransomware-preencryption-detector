@@ -45,7 +45,8 @@ We also intend to try clustering algorithms to check whether we can identify clu
 
 ## Preliminary Architecture
 The main components are:
-![image](https://user-images.githubusercontent.com/42537931/122037096-8b5fbc00-cdd4-11eb-81a1-aa833d5519aa.png)
+
+![Screenshot 2021-06-15 at 12 22 58](https://user-images.githubusercontent.com/42537931/122037594-01fcb980-cdd5-11eb-990f-92f7e314acd8.png)
 
 ![Screenshot 2021-06-15 at 12 24 42](https://user-images.githubusercontent.com/42537931/122037424-daa5ec80-cdd4-11eb-9987-32ebb6ddc658.png)
 
