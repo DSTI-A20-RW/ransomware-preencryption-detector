@@ -30,7 +30,7 @@ Another challenge in dealing with multi-class categorical variables is when the 
 
 ## Cuckoo Reports Parser
 
-![cuckoo-reports-parser-pipeline](https://user-images.githubusercontent.com/54726923/122110644-12d21d00-ce1f-11eb-8d88-6014336e2ca8.jpg)
+![cuckoo-reports-parser-pipeline](https://user-images.githubusercontent.com/54726923/122111097-9c81ea80-ce1f-11eb-9a6f-6ee5627d5716.jpg)
 
 ## Machine Learning models to consider
 * Random forests and other variations
