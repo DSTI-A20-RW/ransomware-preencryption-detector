@@ -44,10 +44,13 @@ techniques for imbalanced data.
 We also intend to try clustering algorithms to check whether we can identify clusters of malware types, other than ransomware, such as : Worms, Trojans, Spyware, RATs, Stealers, Bankers etc.
 
 ## Preliminary Architecture
+The main components are:
+![image](https://user-images.githubusercontent.com/42537931/122037096-8b5fbc00-cdd4-11eb-81a1-aa833d5519aa.png)
 
-![Screenshot](architecture.jpg)
+![Screenshot 2021-06-15 at 12 24 42](https://user-images.githubusercontent.com/42537931/122037424-daa5ec80-cdd4-11eb-9987-32ebb6ddc658.png)
 
-We consider creating desktop application as well. Possible improvement can be to run ML model on lambda function to build serverless architecture.
+![Screenshot 2021-06-15 at 12 24 50](https://user-images.githubusercontent.com/42537931/122037450-e1ccfa80-cdd4-11eb-80e2-abe02196beb7.png)
+
 
 ## Stack
 * Python,
