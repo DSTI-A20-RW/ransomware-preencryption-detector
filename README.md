@@ -28,6 +28,10 @@ Since data is mainly categorical with more than 1000 possible features that refl
 
 Another challenge in dealing with multi-class categorical variables is when the training dataset doesn’t provide an exhaustive list of all possible classes. When deployed, the model would most probably be faced with unseen classes. For example, there are over 1000 possible Windows API calls and the collected dataset so far only contains about 250 of them. Dealing with this issue will require us to explore multiple strategies for handling unseen classes to achieve the best performance. An additional option would be model retraining in production with new data via incremental learning techniques.
 
+## Cuckoo Reports Parser
+
+![cuckoo-reports-parser-pipeline](https://user-images.githubusercontent.com/54726923/122111097-9c81ea80-ce1f-11eb-9a6f-6ee5627d5716.jpg)
+
 ## Machine Learning models to consider
 * Random forests and other variations
 * Artificial Neural Network
