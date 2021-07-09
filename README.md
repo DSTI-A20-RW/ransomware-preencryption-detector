@@ -1,7 +1,7 @@
 # ransomware-preencryption-detector
 Safe browsing facility that detects ransomware in the pre-encryption execution step without imposing any danger to host instance.
 
-# Introduction
+## Introduction
 
 In 2020 only, ransomware “business” brought $20 Billion to cyber criminals. This appalling figure is rising gradually every year and existing solutions are not able to combat this threat. According to Cybercrime Magazine this figure, assuming current trend, can rise up and exceed $265 Billion By 2031. (https://cybersecurityventures.com/global-ransomware-damage-costs-predicted-to-reach-250-billion-usd-by-2031/)
 
@@ -14,7 +14,7 @@ Prior to getting data to analyze and work with we had to find goodware, malware 
 
 Eventually, we have produced reports dataset thanks to Cuckoo Sandbox (https://cuckoosandbox.org). This sandbox software provides detailed and valuable insights on internal processes running in OS during file execution.
 
-# Structure of raw data
+## Structure of raw data
 
 Reports follow json file structure. It can be described as follows:
 Main file structure :
@@ -30,7 +30,7 @@ We have used custom JSON parser to retrieve needed data from reports. It’s imp
 (one file was 1.1 gigabyte in size and took 39 seconds to process)
 
 
-# Key features
+## Key features
 
 Indicators of compromise (IOCs) are “pieces of forensic data, such as data found in system log entries or files, that identify potentially malicious activity on a system or network.” Indicators of compromise aid information security and IT professionals in detecting data breaches, malware infections, or other threat activity. By monitoring for indicators of compromise, organizations can detect attacks and act quickly to prevent breaches from occurring or limit damages by stopping attacks in earlier stages.
 
@@ -86,7 +86,7 @@ The main components are:
 
 
 
-# Some challenges we overcame
+## Some challenges we overcame
 One of the big challenges in this project is dealing with Cuckoo analysis json reports. On one hand, their size can reach up to 500-700 megabytes, which requires us to figure out a memory efficient and fast way to load and process them. On the other hand, understanding the extensive nested structure of the reports and interpreting the meaning of each section poses a challengeas well and may require the help of an operating systems expert. In fact, Cuckoo provides very detailed reports outlining the behavior of the file when executed inside a realistic isolated environment, and due to this detailed nature and the adaptive structure of the reports to eachsubmitted file for analysis, cuckoo doesn’t have enough documentation of the reports’ contents on their official website.
 Since data is mainly categorical with more than 1000 possible features that reflect the file’s behavior in a Windows environment, the challenge would be to successfully identify the important features that can differentiate between ransomware and goodware. This requires usto properly study features’ importance and implement different variable selection algorithms. We’ll also deal with the potential problem of variables’ multicollinearity and explore various dimensionality reduction methods. An important question in this eventuality would be the relevance of feature elimination when the categorical variables belong to a bigger category.
 Another challenge in dealing with multi-class categorical variables is when the training dataset doesn’t provide an exhaustive list of all possible classes. When deployed, the model would most probably be faced with unseen classes. For example, there are over 1000 possible Windows API calls and the collected dataset so far only contains about 250 of them. Dealing with this issue will require us to explore multiple strategies for handling unseen classes to achieve the best performance. An additional option would be model retraining in production with new data via incremental learning techniques.
