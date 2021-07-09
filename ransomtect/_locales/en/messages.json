@@ -1,0 +1,24 @@
+{
+  "download_blocked_message_title": {
+    "message": "Download Blocked",
+    "description": "The title of the message shown to the user when a download is blocked"
+  },
+  "download_blocked_message_body": {
+    "message": "Download of $filename$ will be analyzed. The results will be sent to your mail shortly",
+    "description": "The body of the message shown to the user when a download is blocked",
+    "placeholders": {
+      "filename": {
+        "content": "$1",
+        "example": "payslip.hta"
+      },
+       "url": {
+        "content": "$2",
+        "example": "https://example.com/test.html"
+      },
+      "fileUrl": {
+       "content": "$3",
+       "example": "https://example.com/payslip.hta"
+     }
+    }
+  }
+}
