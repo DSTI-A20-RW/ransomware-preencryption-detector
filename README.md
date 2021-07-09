@@ -59,7 +59,7 @@ One common technique adversaries leverage is packing binaries. Packing an execut
 Cisco Talos Intelligence Group - Comprehensive Threat Intelligence: New Research Paper: Prevalence and impact of low-entropy packing schemes in the malware ecosystem
 
 
-## Machine Learning models to consider
+## Machine Learning models we considered
 * Random forests and other variations
 * Artificial Neural Network
 * Naïve Bayes
