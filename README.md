@@ -19,41 +19,8 @@ Eventually, we have produced reports dataset thanks to Cuckoo Sandbox (https://c
 Reports follow json file structure. It can be described as follows:
 Main file structure :
 
-{   "info": 	{ },
-    "signatures": [  { }, { }, …  ],
-    “target”:	{ },
-    “dropped”:	[ ],
-    "behavior": 	{ "generic": 	[ ],
-   "apistats": 	{ },
-   "processes": 	[ { “calls”: [ {},{},.. ] }, ... ],
-		   "processtree": [ {}, {} .. ],
-		   "summary": 	{ "files": [ ],
-			             	  "keys": [ ],
-			                "dll_loaded": [ ],
-                                                            "mutexes": [ ],
-			                "resolves_host": [ ],
-				  … }
-		}
-   “static”: 	{ "pe_imports": [ ],
-   "pe_exports": [ ],
-   "pe_timestamp": "",
-   "imported_dll_count": “”,
-   "pe_sections": [ ],
-   …,
-},
-   "network": 	{ "http" : [ ],
-   "tcp" : [ ],
-   "udp" : [ ],
-   "dns" : [ ],
-   "hosts" : [ ],
-},     
-   "debug": 	{ "log": [ ]
-   "cuckoo" : [ ] 
-},
-  “screenshots”: [ ],
-  “strings” : 	[ ],
-  “metadata”:	{ },
-}
+![Screenshot 2021-07-10 at 01 53 27](https://user-images.githubusercontent.com/42537931/125145495-b7dfcd00-e121-11eb-9ffa-e575d931b767.png)
+
 
 After deep analysis of data that’s we acquired with Cuckoo, taking into account that it can vary from one case to another, we agreed on extracting specific values that we will describe later in the article.
 
