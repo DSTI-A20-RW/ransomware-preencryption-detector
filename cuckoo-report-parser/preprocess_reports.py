@@ -13,9 +13,7 @@ IS_RANSOMWARE = 1
 
 
 def set_file_class():
-    '''Sets the class and subclass of the file which report is being processed
-       @input :     None ( The return value is determined by global variables )
-       @return :    dict { "class" : _ , "subclass" : _ }'''
+    '''Sets the class and subclass of the file which report is being processed.'''
     class_ = {}
     if IS_GOODWARE:
         class_['class'] = 'goodware'
@@ -30,6 +28,8 @@ def set_file_class():
 
 
 def set_encoded_label(file_class):
+    '''This finction sets an encoded label where 'malware' is class with label 1, 
+    ransomware subclass with label 2 '''
     class_label = 0
     subclass_label = 0
     if file_class['class'] == 'malware':
@@ -44,6 +44,7 @@ def set_encoded_label(file_class):
 
 
 def extract_antivirus_analysis(a_signature):
+    '''this function retrieves antivirus information from json reports.'''
     extracted_antivirus = {}
     try:
         marks = a_signature['marks']
@@ -60,6 +61,7 @@ def extract_antivirus_analysis(a_signature):
 
 
 def extract_engine_analysis(a_signature):
+    '''this function extracts metadata such as severity description antivirus count'''
     engine_analysis = {}
     try :
         engine_analysis['severity'] = a_signature['severity']
@@ -72,6 +74,7 @@ def extract_engine_analysis(a_signature):
 
 
 def is_engine_analysis(a_signature):
+    '''This function compares scores of severity to set a treshold of an acceptable or unacceptable risk;'''
     threat_detection_engines = ['antivirus', 'virustotal', 'suricata', 'irma', 'sysmon']
     is_engine_analysis_ = False
     try :
@@ -92,6 +95,7 @@ def change_key_name(key, dict):
 
 
 def process_signatures(report_json):
+    '''This function is handling missing values case in data extraction.'''
     extracted_engine_analysis = {'is_missing' : 0}   
     try:
         signatures = report_json['signatures']
@@ -118,6 +122,7 @@ def fetch_summary(report_json):
         pass
 
 def process_behavior_files(report_json):
+    '''This function processes behaviour data from json reports.'''
     extracted_files = {'is_missing' : 0}
     try:
         summary = fetch_summary(report_json)
@@ -136,6 +141,7 @@ def process_behavior_files(report_json):
 
 
 def process_behavior_regkeys(report_json):
+    '''This function processes registry keys from behaviour data.'''
     extracted_regkeys = {'is_missing' : 0}
     try:
         summary = fetch_summary(report_json)
@@ -154,6 +160,7 @@ def process_behavior_regkeys(report_json):
 
 
 def process_behavior_dll(report_json):
+    '''This function processes loaded DLL from behaviour data.'''
     extracted_dll = {'is_missing' : 0}
     try:
         summary = fetch_summary(report_json)
@@ -165,6 +172,7 @@ def process_behavior_dll(report_json):
 
 
 def process_pe_imports(pe_analysis):
+    '''This function processes PE imports.'''
     extracted_pe_imports = {}
     try:
         pe_imports = pe_analysis['pe_imports']
@@ -185,6 +193,7 @@ def process_pe_imports(pe_analysis):
 
 
 def process_pe_sections(pe_analysis):
+    '''This function processes PE entropy values.'''
     extracted_pe_entropy = {}
     try:
         pe_sections = pe_analysis['pe_sections']
@@ -201,6 +210,7 @@ def process_pe_sections(pe_analysis):
 
 
 def process_pe_analysis(report_json):
+    '''This function processes all PE static analysis data.'''
     extracted_pe = {'is_missing' : 0}
     try:
         pe_analysis = report_json['static']
@@ -222,6 +232,7 @@ def fill_missing(dic, key):
 
 
 def process_target_file(report_json, include_yara=True):
+    '''This function processes file information data.'''
     extracted_file_info = {'is_missing' : 0}
     info_elements = ['name', 'type', 'size', 'ssdeep', 'sha256', 'sha512', 'md5']
     if include_yara :
@@ -250,6 +261,7 @@ def get_duration(start_time_str, end_time_str):
 
 
 def process_info_machine(report_json):
+    '''This function processes information about cuckoo analysis.'''
     extracted_analysis = {'is_missing' : 0}
     try:
         analysis = report_json['info']['machine']
@@ -272,6 +284,7 @@ def update_dictionary(dic1, dic2):
 
 
 def process_behavior_apistats(report_json):
+    '''This function processes API calls from behaviour '''
     extracted_api_calls = {'is_missing' : 0}
     try:
         apistats = report_json['behavior']['apistats']
@@ -291,6 +304,7 @@ def process_behavior_apistats(report_json):
 
 
 def process_json_file(json_file_path, result_folder_path, file_class):
+    '''This function extracts all relevant information from json reports and saves it into a new json file.'''
     extracted = {}
     try:
         with open(json_file_path, 'r') as f:
@@ -321,6 +335,7 @@ def delete_json_report(json_file_path):
 
 
 def unzip_report(file_path):
+    '''This function handles working with zip files.'''
     json_path = os.path.dirname(file_path) + os.sep
     json_file_path = os.path.splitext(file_path)[0] + '.json'
     zipfile.ZipFile(file_path, 'r').extractall(json_path)
@@ -328,7 +343,7 @@ def unzip_report(file_path):
 
 
 def process_zip_file(file_path, result_folder_path, file_class):
-    #print(current_process().name,'Processing', file_path)
+    '''This function handles working with zip files.'''
     start = time.time()
     json_file_path = unzip_report(file_path)
     result_path = os.path.join(result_folder_path, os.path.basename(json_file_path))
@@ -338,6 +353,7 @@ def process_zip_file(file_path, result_folder_path, file_class):
 
 
 def read_zip_files(root):
+    '''This function handles working with zip files.'''
     files = []
     for dir_name, sub_dir_list, file_list in os.walk(root):
         for file_name in file_list:

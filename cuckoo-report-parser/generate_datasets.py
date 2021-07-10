@@ -5,6 +5,7 @@ import orjson
 import pandas as pd
 import numpy as np
 import glob2
+import pickle
 from itertools import repeat
 from multiprocessing import Pool, Process, current_process, cpu_count
 
@@ -18,12 +19,14 @@ def get_file_list(folder_path, extensions =['zip']):
 
 
 def json_to_dict(json_file):
+  '''This function returns dictionary format of the given json file'''
   with open(json_file, 'r') as f:
     json_report = orjson.loads(f.read())
   return json_report
 
 
 def get_index(json_report, index_value):
+  '''This function returns index value from "file information" of json report'''
   try:
       return json_report['file_information'][index_value]
   except Exception as e:
@@ -31,19 +34,23 @@ def get_index(json_report, index_value):
 
 
 def get_label(json_report, category):
+  '''This function is used to retrieve the sample label, e.g. malware, ransomware and goodware'''
   try:
       return json_report['file_class'][category + '_label']
   except Exception as e:
       raise Exception('get_label ERROR', e)
 
 
-def set_metadata(selection, json_report, index_value): 
+def set_metadata(selection, json_report, index_value):
+  '''This function is used to set metadata, e.g. label is used for malware-goodware
+    case and sublabel is used for ransomware-malware case respectively'''
   selection[index_value] = get_index(json_report, index_value)
   selection['label'] = get_label(json_report, 'class')
   selection['sublabel'] = get_label(json_report, 'subclass')
 
 
 def get_encoded_apistats(json_file, one_hot = False, index_value = 'md5'):
+  '''This function returns one hot encoded API stats data from json report'''
   try:
     print('Processing :', json_file)
     json_report =  json_to_dict(json_file)
@@ -61,13 +68,28 @@ def get_encoded_apistats(json_file, one_hot = False, index_value = 'md5'):
     print('KEY ERROR', e)
 
 
+def remove_dll(dlls, substring = ['virusshare', 'cucko'], unique=True):
+    '''This function returns DLL feature list, leaving only unique values'''
+    occurences = []
+    if unique:
+        dlls = list(set([ os.path.splitext(dll.lower().replace(os.path.sep, '/'))[0] for dll in dlls ]))
+    for dll in dlls:
+        for target in substring:
+            if target in dll :
+                if dll not in occurences:
+                    occurences.append(dll)
+    for dll in occurences:
+        dlls.remove(dll)
+    return dlls
 
 def get_encoded_dll_loaded(json_file, index_value = 'md5'):
+  '''this function returns one hot encoded DLL data'''
   try:
     print('Processing :', json_file)
     json_report =  json_to_dict(json_file)
     dll_loaded = json_report['dll_loaded']['loaded_dll']
-    dll_loaded_todict = { dll : 1 for dll in dll_loaded }
+    pruned_dll_loaded = remove_dll(dll_loaded, substring = ['virusshare', 'cucko'], unique=True)
+    dll_loaded_todict = { dll : 1 for dll in pruned_dll_loaded }
     set_metadata(dll_loaded_todict, json_report, index_value)
     encoded_dll_loaded = pd.json_normalize(dll_loaded_todict, max_level=0).set_index(index_value)
     print('Processed :', json_file)
@@ -78,6 +100,7 @@ def get_encoded_dll_loaded(json_file, index_value = 'md5'):
 
 
 def get_file_operations_counts(json_file, index_value = 'md5'):
+  '''This function retrieves file operations count features.'''
   try:
     print('Processing :', json_file)
     json_report =  json_to_dict(json_file)
@@ -92,6 +115,7 @@ def get_file_operations_counts(json_file, index_value = 'md5'):
 
 
 def get_regkeys_counts(json_file, index_value = 'md5'):
+  '''This function retrieves registry keys operations count features.'''
   try:
     print('Processing :', json_file)
     json_report =  json_to_dict(json_file)
@@ -105,6 +129,7 @@ def get_regkeys_counts(json_file, index_value = 'md5'):
 
 
 def get_encoded_pe_imports(json_file, dll_name = None, index_value = 'md5'):
+  '''This function retrieves one hot encoded PE Imports features'''
   try:
     print('Processing :', json_file)
     json_report =  json_to_dict(json_file)
@@ -121,7 +146,95 @@ def get_encoded_pe_imports(json_file, dll_name = None, index_value = 'md5'):
     print('pe_imports KEY ERROR', e)
 
 
+
+def get_regkeys(json_file, category, index_value = 'md5'):
+  '''This function retrieves nested registry keys features.'''
+  try:
+    print('Processing :', json_file)
+    json_report =  json_to_dict(json_file)
+    regkeys = json_report['regkeys']['regkey_values'][category]
+    regkeys_todict = {k:1 for k in regkeys}
+    set_metadata(regkeys_todict, json_report, index_value)
+    encoded_regkeys = pd.json_normalize(regkeys_todict, max_level=0).set_index(index_value)
+    print('Processed :', json_file)
+    return encoded_regkeys
+  except Exception as e:
+    print(f'regkeys {category} KEY ERROR', e)
+
+
+
+def get_key(nested_key, level=1, sep=os.path.sep):
+  '''This function deals with separating values in registry keys features, 
+    as they ususally contain path information and other details'''
+  keys = [key.lower() for key in nested_key.split(sep)]
+  try:
+    return keys[:level]
+  except:
+    if level > 1:
+      return get_key(nested_key, level=level-1)
+    else:
+      pass
+
+def get_all_keys(regkeys, level=1, unique=True, sep='/'):
+  '''This function returns list of unique nested registry key values up to a certain level'''
+  results = []
+  for nested_key in regkeys:
+    results.extend(get_key(nested_key, level=level, sep=sep))
+  if unique:
+    results = list(set(results))
+  return results
+
+def remove_keys(keys, substring=None, numeric=True):
+    '''This function removes unwanted symbols in nested registry keys data'''
+    occurences = []
+    for key in keys:
+        if numeric:
+            if key.replace('.', '').replace('-', '').isnumeric():
+                occurences.append(key)
+        for target in substring:
+            if target in key:
+                occurences.append(key)
+
+    for key in occurences:
+        keys.remove(key)
+    return keys
+
+def get_nested_regkeys(json_file, category, level = 15, index_value = 'md5'):
+  '''This function retrieves all nested registry keys from json, cleaned and encoded.'''
+  try:
+    print('Processing :', json_file)
+    json_report =  json_to_dict(json_file)
+    regkeys = json_report['regkeys']['regkey_values'][category]
+    nested_regkeys = get_all_keys(regkeys, level=level, sep='\\')
+    pruned_nested_regkeys = remove_keys(nested_regkeys, substring=['virusshare', 'cucko', 'default'], numeric=True)
+    nested_regkeys_todict = {k:1 for k in pruned_nested_regkeys}
+    set_metadata(nested_regkeys_todict, json_report, index_value)
+    encoded_nested_regkeys = pd.json_normalize(nested_regkeys_todict, max_level=0).set_index(index_value)
+    print('Processed :', json_file)
+    return encoded_nested_regkeys
+  except Exception as e:
+    print(f'Nested Regkeys {category} KEY ERROR', e)
+
+
+def get_nested_fileops(json_file, category, level = 15, index_value = 'md5'):
+  '''This function retrieve nested file operations from json, cleaned and encoded'''
+  try:
+    print('Processing :', json_file)
+    json_report =  json_to_dict(json_file)
+    fileops = json_report['file_operations']['files_values'][category]
+    nested_files = get_all_keys(fileops, level=level, sep='\\')
+    pruned_nested_files = remove_keys(nested_files, substring=['virusshare', 'cucko', 'default'], numeric=True)
+    nested_files_todict = {k:1 for k in pruned_nested_files}
+    set_metadata(nested_files_todict, json_report, index_value)
+    encoded_nested_files = pd.json_normalize(nested_files_todict, max_level=0).set_index(index_value)
+    print('Processed :', json_file)
+    return encoded_nested_files
+  except Exception as e:
+    print(f'Nested File Operations {category} KEY ERROR', e)
+
+
 def get_pe_entropy(json_file, index_value = 'md5'):
+  '''This function retrieves PE entropy features from json report.'''
   try:
     print('Processing :', json_file)
     json_report =  json_to_dict(json_file)
@@ -137,7 +250,9 @@ def get_pe_entropy(json_file, index_value = 'md5'):
 
 
 def parallelize_process(process, args, star=True):
-    
+    '''This function allows using multiprocessing for data extraction.'''
+    one_line_dataframes = []
+
     try:
         pool = Pool()
         if star == True:
@@ -153,200 +268,103 @@ def parallelize_process(process, args, star=True):
 
 
 
-def parallelize_concatenation(dfs, result_path, nan_value = 0):
-    
+def parallelize_concatenation(dfs, result_path=None, pickled=False, compression=None, nan_value = 0):
+    '''This function allows using multiprocessing for data concatenation of multiple one line dataframes.'''
     dfs_groupings = []
     
-    for i in range(cpu_count()):
-        grouping = [dfs[j] for j in range(len(dfs)) if j % cpu_count() == i]
-        if len(grouping) > 0:
-            dfs_groupings.append(grouping)
-
     try:
+        for i in range(cpu_count()):
+            grouping = [dfs[j] for j in range(len(dfs)) if j % cpu_count() == i]
+            if len(grouping) > 0:
+                dfs_groupings.append(grouping)
+
         pool = Pool()
         concatenated_subsets = pool.map(pd.concat, dfs_groupings)
         pool.close()
         pool.join()
-    except Exception as e:
-        print('Parallelizing concatenation failed', e)
 
-    try:
         complete_df = pd.concat(concatenated_subsets, axis=0, ignore_index=False).replace(np.nan, nan_value).astype(np.int32) #remove if not one-hot
-        complete_df.to_csv(result_path)
+        if result_path is not None:
+            if pickled:
+                complete_df.to_pickle(result_path, compression=compression)
+            else:
+                complete_df.to_csv(result_path)
+        else:
+            return complete_df
+
     except Exception as e:
         print('Concatenating dataframes failed', e)
+        return pd.DataFrame()
     
 
 
+def main():
 
-def main_api_stats():
-    
+    all_datasets = dict()
+
+    #get the extracted json files list
     json_files_path = os.path.join(os.getcwd(), 'extracted')
     json_files_list = get_file_list(json_files_path, extensions=['json'])
+
+    processing_elements = {
+         'apistats_counts.pkl' : [get_encoded_apistats, False],
+         'fileops_created_nested_files.pkl' : [get_nested_fileops, 'file_created'],
+         'fileops_deleted_nested_files.pkl' : [get_nested_fileops, 'file_deleted'],
+         'fileops_exists_nested_files.pkl' : [get_nested_fileops, 'file_exists'],
+         'fileops_failed_nested_files.pkl' : [get_nested_fileops, 'file_failed'],
+         'fileops_opened_nested_files.pkl' : [get_nested_fileops, 'file_opened'],
+         'fileops_read_nested_files.pkl' : [get_nested_fileops, 'file_read'],
+         'fileops_recreated_nested_files.pkl' : [get_nested_fileops, 'file_recreated'],
+         'fileops_written_nested_files.pkl' : [get_nested_fileops, 'file_written'],
+         'fileops_summary.pkl' : [get_file_operations_counts, None],
+         'loaded_dll_onehot.pkl' : [get_encoded_dll_loaded, None],
+         'pe_entropy_analysis.pkl' : [get_pe_entropy, None],
+         'pe_imports_advapi32.pkl' : [get_encoded_pe_imports, 'advapi32.dll'],
+         'pe_imports_comctl32.pkl' : [get_encoded_pe_imports, 'comctl32.dll'],
+         'pe_imports_gdi32.pkl' : [get_encoded_pe_imports, 'gdi32.dll'],
+         'pe_imports_kernel32.pkl' : [get_encoded_pe_imports, 'kernel32.dll'],
+         'pe_imports_msvcrt.pkl' : [get_encoded_pe_imports, 'msvcrt.dll'],
+         'pe_imports_ole32.pkl' : [get_encoded_pe_imports, 'ole32.dll'],
+         'pe_imports_shell32.pkl' : [get_encoded_pe_imports, 'shell32.dll'],
+         'pe_imports_user32.pkl' : [get_encoded_pe_imports, 'user32.dll'],
+         'pe_imports_libraries.pkl' : [get_encoded_pe_imports, None],
+         'regkeys_deleted_nested_keys.pkl' : [get_nested_regkeys, 'regkey_deleted'],
+         'regkeys_opened_nested_keys.pkl' : [get_nested_regkeys, 'regkey_opened'],
+         'regkeys_read_nested_keys.pkl' : [get_nested_regkeys, 'regkey_read'],
+         'regkeys_written_nested_keys.pkl' : [get_nested_regkeys, 'regkey_written'],
+         'regkeys_summary.pkl' : [get_regkeys_counts, None ]
+         }
 
     start = time.time()
 
-    one_hot = False
-    args = (json_files_list, repeat(one_hot))
-    dfs = parallelize_process(get_encoded_apistats, args)
-
-    print('Processing took : {} s'.format(time.time()-start))
-
-    result_path = os.getcwd() + os.sep + 'count_encoded_ransom_dataset.csv'
-    parallelize_concatenation(dfs, result_path)
-
-    print('Concatenation and saving file took : {} s'.format(time.time() - start))
-
-
-def main_dlls():
-    
-    json_files_path = os.path.join(os.getcwd(), 'extracted')
-    json_files_list = get_file_list(json_files_path, extensions=['json'])
-
-    start = time.time()
-
-    dfs = parallelize_process(get_encoded_dll_loaded, json_files_list, star=False)
-
-    print('Processing took : {} s'.format(time.time()-start))
-
-    result_path = os.getcwd() + os.sep + 'onehot_encoded_dll_ransom_dataset.csv'
-    parallelize_concatenation(dfs, result_path)
-
-    print('Concatenation and saving file took : {} s'.format(time.time() - start))
-    
-
-def main_file_operations():
-    
-    json_files_path = os.path.join(os.getcwd(), 'extracted')
-    json_files_list = get_file_list(json_files_path, extensions=['json'])
-
-    start = time.time()
-
-    dfs = parallelize_process(get_file_operations_counts, json_files_list, star=False)
-
-    print('Processing {} files took : {} s'.format(len(json_files_list), time.time()-start))
-
-    result_path = os.getcwd() + os.sep + 'file_operations_counts_ransom_dataset.csv'
-    parallelize_concatenation(dfs, result_path)
-
-    print('Concatenation and saving file took : {} s'.format(time.time() - start))
-
-
-
-def main_regkeys():
-    
-    json_files_path = os.path.join(os.getcwd(), 'extracted')
-    json_files_list = get_file_list(json_files_path, extensions=['json'])
-
-    start = time.time()
-
-    dfs = parallelize_process(get_regkeys_counts, json_files_list, star=False)
-
-    print('Processing {} files took : {} s'.format(len(json_files_list), time.time()-start))
-
-    result_path = os.getcwd() + os.sep + 'regkeys_counts_ransom_dataset.csv'
-    parallelize_concatenation(dfs, result_path)
-
-    print('Concatenation and saving file took : {} s'.format(time.time() - start))
-
-
-def main_pe_entropy():
-    
-    json_files_path = os.path.join(os.getcwd(), 'extracted')
-    json_files_list = get_file_list(json_files_path, extensions=['json'])
-
-    start = time.time()
-
-    dfs = parallelize_process(get_pe_entropy, json_files_list, star=False)
-
-    print('Processing {} files took : {} s'.format(len(json_files_list), time.time()-start))
-
-    result_path = os.getcwd() + os.sep + 'pe_entropy_ransom_dataset.csv'
-    parallelize_concatenation(dfs, result_path)
-
-    print('Concatenation and saving file took : {} s'.format(time.time() - start))
-
-
-
-def main_dll():
-    
-    json_files_path = os.path.join(os.getcwd(), 'extracted')
-    json_files_list = get_file_list(json_files_path, extensions=['json'])
-
-    dll_names = ['kernel32.dll',
-                 'user32.dll',
-                 'msvcrt.dll',
-                 'ole32.dll',
-                 'shell32.dll',
-                 'oleaut32.dll',
-                 'comctl32.dll',
-                 'comdlg32.dll',
-                 'winmm.dll',
-                 'ntdll.dll']
-
-    for dll_name in dll_names:
-
-        start = time.time()
-
-        args = (json_files_list, repeat(dll_name))
-        dfs = parallelize_process(get_encoded_pe_imports, args)
+    for target, elements in processing_elements.items():
         
-        #dfs = parallelize_process(get_encoded_pe_imports, json_files_list, star=False)
-            
-        print('Processing {} files took : {} s'.format(len(json_files_list), time.time()-start))
+        start = time.time()
+        print('Processing :', target)
 
-        result_path = os.getcwd() + os.sep + 'encoded_' + dll_name.split('.')[0] + '_pe_imports_dataset.csv'
-        #result_path = os.getcwd() + os.sep + 'encoded_pe_imports_dll_libraries_dataset.csv'
-        parallelize_concatenation(dfs, result_path)
+        star = False
+        args = json_files_list
+
+        if elements[1] is not None:
+            star = True
+            args = (json_files_list, repeat(elements[1]))
+        
+        #extract data and put into a one line dataframe for each file
+        dfs = parallelize_process(elements[0], args, star=star)
+
+        print('Processing took : {} s'.format(time.time()-start))
+
+        #concatenate the resulting one line dataframes in one dataframe and append
+        result_df = parallelize_concatenation(dfs)
+        if not result_df.empty:
+            all_datasets[target] = result_df
+
+        #save results
+        result_path =  os.getcwd() + os.sep + 'datasets/' + target + '.gz'
+        result_df.to_pickle(result_path, compression='gzip')
 
         print('Concatenation and saving file took : {} s'.format(time.time() - start))
 
-
-def is_ransomware(json_file, total, result_folder_path):
-    try:
-        print('Processing :', json_file)
-        json_report =  json_to_dict(json_file)
-        antivirus = json_report['antivirus_detection']
-        is_ransomware_ = 0
-        for key in antivirus.keys():
-            if 'antivirus' in key:
-                for element in antivirus[key]['ioc_list']:
-                    for keyword in ['virlock', 'rnsm', 'ransom', 'cryptik', 'kryptik']:
-                        if keyword in element.lower():
-                            is_ransomware_+= 1
-        if is_ransomware_ > 0:
-            total.append(json_file)
-            json_report['file_class']['subclass'] = 'ransomware'
-            json_report['file_class']['subclass_label'] = '2'
-
-        result_file_path = os.path.join(result_folder_path, os.path.basename(json_file))
-
-        with open(result_file_path, "wb") as f:
-            f.write(orjson.dumps(json_report, option=orjson.OPT_INDENT_2))
-
-        print('Processed :', json_file, ' with ', is_ransomware_)
-    except Exception as e:
-        print('antivirus KEY ERROR', e)
-
-
-
-
-def detecting_ransomware():
-    
-    json_files_path = os.path.join(os.getcwd(), 'extracted')
-    json_files_list = get_file_list(json_files_path, extensions=['json'])
-
-    total = []
-
-    result_folder_path = os.path.join(os.getcwd(), 'modified')
-    if not os.path.exists(result_folder_path):
-        os.mkdir(result_folder_path)
-
-    for json_file in json_files_list:
-        is_ransomware(json_file, total, result_folder_path)
-
-    print("Total ransomware {} from {}".format(len(total), len(json_files_list)))
-    #print(total)
 
 
 
