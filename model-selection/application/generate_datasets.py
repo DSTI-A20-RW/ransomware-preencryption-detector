@@ -17,33 +17,34 @@ def get_file_list(folder_path, extensions =['zip']):
         file_list.extend(glob2.glob(os.path.join(folder_path, '*.' + extension)))
     return file_list
 
-
+'''This function returns dictionary retrieved from json file'''
 def json_to_dict(json_file):
   with open(json_file, 'r') as f:
     json_report = orjson.loads(f.read())
   return json_report
 
-
+'''This function returns index value from "file information" of json report'''
 def get_index(json_report, index_value):
   try:
       return json_report['file_information'][index_value]
   except Exception as e:
       raise Exception('get_index ERROR', e)
 
-
+'''This function is used to label data, e.g. malware, ransomware and goodware'''
 def get_label(json_report, category):
   try:
       return json_report['file_class'][category + '_label']
   except Exception as e:
       raise Exception('get_label ERROR', e)
 
-
+'''This function is used to set metadata, e.g. label is used for malware-goodware
+ case and sublabel is used for ransomware-malware case respectively'''
 def set_metadata(selection, json_report, index_value): 
   selection[index_value] = get_index(json_report, index_value)
   selection['label'] = get_label(json_report, 'class')
   selection['sublabel'] = get_label(json_report, 'subclass')
 
-
+'''This function returns one_hot encoded API stats data from json report'''
 def get_encoded_apistats(json_file, one_hot = False, index_value = 'md5'):
   try:
     print('Processing :', json_file)
@@ -61,7 +62,7 @@ def get_encoded_apistats(json_file, one_hot = False, index_value = 'md5'):
   except Exception as e:
     print('KEY ERROR', e)
 
-
+'''This function returns DLL feature list, leaving only unique values'''
 def remove_dll(dlls, substring = ['virusshare', 'cucko'], unique=True):
     occurences = []
     if unique:
@@ -75,6 +76,7 @@ def remove_dll(dlls, substring = ['virusshare', 'cucko'], unique=True):
         dlls.remove(dll)
     return dlls
 
+'''this function returns one-hot encoded data'''
 def get_encoded_dll_loaded(json_file, index_value = 'md5'):
   try:
     print('Processing :', json_file)
@@ -90,7 +92,7 @@ def get_encoded_dll_loaded(json_file, index_value = 'md5'):
     print('dll_loaded KEY ERROR', e)
 
 
-
+'''retrieve file operations count feature'''
 def get_file_operations_counts(json_file, index_value = 'md5'):
   try:
     print('Processing :', json_file)
@@ -104,7 +106,7 @@ def get_file_operations_counts(json_file, index_value = 'md5'):
     print('file_operations_counts KEY ERROR', e)
 
 
-
+'''Retrieve regkeys counts feature from jaon'''
 def get_regkeys_counts(json_file, index_value = 'md5'):
   try:
     print('Processing :', json_file)
@@ -118,6 +120,7 @@ def get_regkeys_counts(json_file, index_value = 'md5'):
     print('regkeys_counts KEY ERROR', e)
 
 
+'''one-hot encode PE Imports feature'''
 def get_encoded_pe_imports(json_file, dll_name = None, index_value = 'md5'):
   try:
     print('Processing :', json_file)
@@ -135,7 +138,7 @@ def get_encoded_pe_imports(json_file, dll_name = None, index_value = 'md5'):
     print('pe_imports KEY ERROR', e)
 
 
-
+'''Retrieve regkeys feature from json'''
 def get_regkeys(json_file, category, index_value = 'md5'):
   try:
     print('Processing :', json_file)
@@ -150,7 +153,8 @@ def get_regkeys(json_file, category, index_value = 'md5'):
     print(f'regkeys {category} KEY ERROR', e)
 
 
-
+'''this function deals with separating values in reg keys features, 
+as they ususally contain path information and other details'''
 def get_key(nested_key, level=1, sep=os.path.sep):
   keys = [key.lower() for key in nested_key.split(sep)]
   try:
@@ -161,6 +165,7 @@ def get_key(nested_key, level=1, sep=os.path.sep):
     else:
       pass
 
+'''This function returns list of unique reg key values'''
 def get_all_keys(regkeys, level=1, unique=True, sep='/'):
   results = []
   for nested_key in regkeys:
@@ -169,6 +174,8 @@ def get_all_keys(regkeys, level=1, unique=True, sep='/'):
     results = list(set(results))
   return results
 
+
+'''this function remove unwanted symbols in registry keys'''
 def remove_keys(keys, substring=None, numeric=True):
     occurences = []
     for key in keys:
@@ -183,6 +190,7 @@ def remove_keys(keys, substring=None, numeric=True):
         keys.remove(key)
     return keys
 
+'''this function retrieves all reg keys from json, separates with \\ symbol, encode results '''
 def get_nested_regkeys(json_file, category, level = 15, index_value = 'md5'):
   try:
     print('Processing :', json_file)
@@ -199,6 +207,7 @@ def get_nested_regkeys(json_file, category, level = 15, index_value = 'md5'):
     print(f'Nested Regkeys {category} KEY ERROR', e)
 
 
+'''retrieve nested file operations from json, adds metadata '''
 def get_nested_fileops(json_file, category, level = 15, index_value = 'md5'):
   try:
     print('Processing :', json_file)
@@ -215,6 +224,7 @@ def get_nested_fileops(json_file, category, level = 15, index_value = 'md5'):
     print(f'Nested File Operations {category} KEY ERROR', e)
 
 
+'''this function retrieves PE entropy feature from json report'''
 def get_pe_entropy(json_file, index_value = 'md5'):
   try:
     print('Processing :', json_file)
@@ -229,7 +239,7 @@ def get_pe_entropy(json_file, index_value = 'md5'):
     print('pe_entropy KEY ERROR', e)
 
 
-
+'''this function allows using multiprocessing for data retrieving'''
 def parallelize_process(process, args, star=True):
     
     one_line_dataframes = []
@@ -248,7 +258,7 @@ def parallelize_process(process, args, star=True):
     return one_line_dataframes
 
 
-
+'''this function allows using multiprocessing for data concatination'''
 def parallelize_concatenation(dfs, result_path=None, pickled=False, compression=None, nan_value = 0):
     
     dfs_groupings = []
