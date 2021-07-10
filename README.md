@@ -122,6 +122,9 @@ Another challenge in dealing with multi-class categorical variables is when the 
 7. You're good to go! Enjoy your safe browsing!
 ![6  Screenshot 2021-07-10 at 09 39 11](https://user-images.githubusercontent.com/42537931/125157543-e387a500-e16b-11eb-8e7f-24cabc34a57f.png)
 
+8. Note that you will be receiving emails in this format:
+![MicrosoftTeams-image (9)](https://user-images.githubusercontent.com/42537931/125157713-c99a9200-e16c-11eb-8332-f8ce8bfee102.png)
+ 
 
 
 
