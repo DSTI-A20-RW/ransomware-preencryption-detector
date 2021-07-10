@@ -3,7 +3,6 @@ Safe browsing facility that detects ransomware in the pre-encryption execution s
 
 ## How to Run
 
-// please refer to visual guide in the bottom of the page
 
 1. Please Download our code from GitHub
 2. Go to "Extensions" in "More tools" menu under three dots in upper right corner of Chrome Browser
@@ -14,6 +13,7 @@ Safe browsing facility that detects ransomware in the pre-encryption execution s
 7. Click on Ransomtect icon, add your email: this way we will keep communication on safety of downlaoding files 
 8. You're good to go! Now, whenever you download anything from web it will be automatically blocked and analysed by our AI. It'll send you an email on results shortly.
 
+Please refer to visual guide in the bottom of the page.
 
 ## Introduction
 
